@@ -201,8 +201,77 @@ plot(KQ_fit)
 #Scale Location: Variierende Streuung deutet auf nicht gleichverteilte varianz hin
 #Residuals vs. Leverage: Einzelne Beobachtung weit weg mit hohem Leverage
 #allerdings keine Punkte über Cooks Distance.
+rm(list=ls())
+
+miet <- read.table("MieteMuenchen2015_PS4.raw", header = TRUE)
+#erinnerung, dass table einen Header braucht
+
+logit_fit <- glm(badextra ~ mieteqm + flaeche, family = binomial(link = "logit"), data = miet)
+head(miet)
+
+summary(logit_fit)
+
+#Interpretation von log odds
+#Wenn die Miete pro qm um eine Einheit steigt, steien die logodds für y /badextra
+#um 0.11
+
+# Die odds Ratios sind das eigentlich interessante für uns, sie ergeben sich
+#durch exponentieren der Koeff. im logit
+
+exp(logit_fit$coefficients)
+#Die hierbei herauskommenden Werte sind das Verhältnis von der alten chance dass Badextra=1
+#zu der neuen Chance dafür wenn ceteris paribus die Variable pro Koeff.
+#um eine Einheit steigt
+
+#Interpretation von Odds Ratios:
+#Wenn die Miete pro qm um einen Euro steigt, steigen die Odds für 
+#Badextra um den Faktor 1.126
+
+#wir wollen eine bestimte wahrscheinlichkeit ausrechnen lassen, 
+#nämlich die Wahrscheinlichkeit für ein Bad extra, 
+#wenn mieteqm 11 Euro ist und wenn die Fläche 50 qm ist
+
+#direkte Rechnung, also wir benutzen plogis(z) = 1/1+e^-z
+#macht aus log_odds Wahrscheinlichkeiten
+
+plogis(predict(logit_fit, newdata = data.frame(mieteqm = 11, flaeche = 50)))
+#Eine Wahrscheinlichkeit von 0.07, also 7 Prozent, dass diese Wohnung ein Bad extra hat
+
+plogis(predict(logit_fit, newdata = data.frame(mieteqm = 15, flaeche = 50)))
+
+#Wenn die Fläche gleich bleibt, aber sich die mieteqm erheblich erhöht (auf 15)
+#dann steigt die Wahrscheinlichkeit auf 10 Prozent
+
+#Anderer Weg zum selben Ergebnis 
+
+predict(logit_fit, newdata = data.frame(mieteqm = 11, flaeche = 50), type = "response")
+
+predict(logit_fit, newdata = data.frame(mieteqm = 20, flaeche = 50), type = "response")
+
+# um Änderungen von Wahrscheinlichkeiten zu sehen, brauchen wir marginale Effekte
+
+library(mfx)
+#Durchschnittliche marginale Effekte
+logitmfx(badextra ~ mieteqm + flaeche, data = miet, atmean = FALSE)
+
+#Interpretation marginale Effekte: Durchschnittlich erhöht sich die Wahrscheinlichkeit für ein zusätzliches Bad um
+#1.15 Prozentpunkte wenn sich mieteqm um eine Einheit nach oben verändert
+
+#Marginale Effekte am Durchschnitt
+
+logitmfx(badextra ~ mieteqm + flaeche, data = miet, atmean = TRUE)
+
+#Interpretation marginale Effekte am Durchschnitt: 
+#Für eine durchschnittliche wohnung steigt die wahrscheinlichkeit um 1.09 Prozent 
+#wenn sie mieteqm um eine Einheit nach oben ädert
 
 
+#Marginaler Effekt am Median
 
+library(marginaleffects)
 
+slopes(logit_fit, newdata = "median", type = "response")
 
+#INterpretation:
+#Die Wahrscheinlichkeit ein zusätzliches BAd zu haben steigt für die median Wohnung um 1.06 Prozentpunkte 
+#wenn die Mieteqm um eine Euro steigt.
